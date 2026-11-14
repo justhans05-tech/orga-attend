@@ -15,22 +15,80 @@
 
   // Helper Pemanggi
   // lan google.script.run berbasis Promise
-  function runServer(functionName, ...args) {
-    return new Promise((resolve, reject) => {
-      google.script.run
-        .withSuccessHandler(response => {
-          if (response && response.success !== undefined) {
-            resolve(response);
-          } else {
-            resolve({ success: true, data: response });
-          }
-        })
-        .withFailureHandler(error => {
-          console.error(`[API Error: ${functionName}]`, error);
-          reject(error);
-        })[functionName](...args);
+ 
+// ==========================================
+// ORGA-ATTEND API CONNECTION
+// GitHub Pages → Google Apps Script
+// ==========================================
+
+// GANTI dengan URL Web App Apps Script TERBARU.
+// Ambil dari Deploy → Manage deployments → Web app URL.
+var GAS_API_URL = var GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwCL7MSD3x8K4iIGygUjtIY4ZbtryCCLJrO-5VALvXU9bi5FiJs2RHdK3KRrk8dMWqf/exec';
+
+async function runServer(functionName, ...args) {
+  try {
+    if (!GAS_API_URL || !GAS_API_URL.endsWith('/exec')) {
+      throw new Error('URL Google Apps Script belum dikonfigurasi.');
+    }
+
+    const response = await fetch(GAS_API_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({
+        fn: functionName,
+        args: args
+      })
     });
+
+    const raw = await response.text();
+
+    let result;
+
+    try {
+      result = JSON.parse(raw);
+    } catch (parseError) {
+      console.error('[API INVALID RESPONSE]', {
+        functionName,
+        status: response.status,
+        url: response.url,
+        response: raw.substring(0, 500)
+      });
+
+      throw new Error(
+        'Respons server bukan JSON yang valid.'
+      );
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        result.message || 'HTTP Error: ' + response.status
+      );
+    }
+
+    console.log('[API SUCCESS]', functionName, result);
+
+    if (
+      result &&
+      typeof result === 'object' &&
+      typeof result.success === 'boolean'
+    ) {
+      return result;
+    }
+
+    return {
+      success: true,
+      data: result
+    };
+
+  } catch (error) {
+    console.error('[API CONNECTION ERROR]', functionName, error);
+    throw error;
   }
+}
+
 
   // Notifikasi Toast
   function showToast(message, type = 'info') {
