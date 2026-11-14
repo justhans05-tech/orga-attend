@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ORGA-ATTEND | Organization Attendance Management</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js untuk rekap statistik -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <?!= include('html/styles'); ?>
+</head>
+
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+  <!-- ================= NOTIFICATION TOAST ================= -->
+  <div id="toastNotification"
+    class="hidden fixed top-5 right-5 z-[9999] flex items-center px-4 py-3 rounded-xl shadow-xl transition-all duration-300">
+    <span id="toastIcon" class="mr-2 font-bold text-lg"></span>
+    <span id="toastMessage"></span>
+  </div>
+
+  <!-- ================= LOADING OVERLAY ================= -->
+  <div id="loadingOverlay"
+    class="hidden fixed inset-0 z-[999] flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+    <div class="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+    <p id="loadingText" class="mt-4 text-white font-medium tracking-wide">Memproses data...</p>
+  </div>
+
+  <!-- ================= NAVBAR ================= -->
+  <header id="mainNavbar" class="hidden sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div
+          class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md">
+          OA
+        </div>
+        <div>
+          <span class="font-extrabold text-slate-900 tracking-tight text-lg">ORGA-ATTEND</span>
+          <span id="userRoleBadge"
+            class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">MEMBER</span>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+        <div class="text-right hidden sm:block">
+          <p id="navUserName" class="text-sm font-bold text-slate-800 leading-tight">-</p>
+          <p id="navUserEmail" class="text-xs text-slate-500 leading-tight">-</p>
+        </div>
+        <button onclick="handleLogout()"
+          class="px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors">
+          Keluar
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <main class="flex-grow flex items-center justify-center p-4 sm:p-6">
+
+    <!-- 1. VIEW LOGIN -->
+    <section id="viewLogin" class="w-full max-w-md mx-auto">
+      <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl">
+        <div class="text-center mb-6">
+          <div
+            class="inline-flex w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 items-center justify-center text-white text-2xl font-black shadow-lg mb-3">
+            OA
+          </div>
+          <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">ORGA-ATTEND</h1>
+          <p class="text-sm text-slate-500 mt-1">Sistem Absensi & Kehadiran Organisasi</p>
+        </div>
+
+        <!-- Tab Tombol Login -->
+        <div class="flex rounded-xl bg-slate-100 p-1 mb-6">
+          <button id="tabGoogleBtn" onclick="switchLoginTab('google')"
+            class="flex-1 py-2 text-xs font-bold rounded-lg bg-white shadow-sm text-slate-800 transition-all">
+            Akun Google
+          </button>
+          <button id="tabPassBtn" onclick="switchLoginTab('password')"
+            class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-800 transition-all">
+            Username & Password
+          </button>
+        </div>
+
+        <!-- FORM LOGIN GOOGLE -->
+        <div id="formLoginGoogle" class="space-y-4">
+          <p class="text-xs text-slate-600 text-center leading-relaxed">
+            Klik tombol di bawah untuk masuk otomatis menggunakan akun Google terverifikasi yang sedang aktif di browser
+            Anda.
+          </p>
+          <button onclick="handleGoogleLogin()"
+            class="w-full py-3 px-4 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 font-semibold text-sm text-slate-700 flex items-center justify-center shadow-sm hover:shadow transition-all space-x-3">
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+              <path fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+            </svg>
+            <span>Masuk dengan Google</span>
+          </button>
+        </div>
+
+        <!-- FORM LOGIN USERNAME & PASSWORD -->
+        <form id="formLoginPassword" onsubmit="handlePasswordLogin(event)" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Username atau Email</label>
+            <input type="text" id="loginUsername" required
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              placeholder="Masukkan username">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+            <input type="password" id="loginPassword" required
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              placeholder="••••••••">
+          </div>
+          <button type="submit"
+            class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold text-sm text-white shadow-lg shadow-blue-500/30 transition-all">
+            Masuk ke Akun
+          </button>
+          <div class="pt-2 text-center text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <span class="font-bold text-slate-700">Akun Pengurus / Panitia:</span><br>
+            Username: <code class="text-blue-600 font-bold">superadmin</code> &bull; Password: <code
+              class="text-blue-600 font-bold">Admin123456!</code><br>
+            Operator: <code class="text-emerald-600 font-bold">operator</code> &bull; Password: <code
+              class="text-emerald-600 font-bold">123456</code>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 2. VIEW MEMBER DASHBOARD -->
+    <section id="viewMemberDashboard" class="hidden w-full max-w-2xl mx-auto space-y-6">
+
+      <!-- Card Sesi Kegiatan Aktif -->
+      <div class="glass-card rounded-3xl p-6 shadow-xl border-t-4 border-blue-600">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <span id="memberSessionBadge"
+              class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full uppercase tracking-wider">●
+              Sedang Dibuka</span>
+            <h2 id="currentSessionTitle" class="text-xl font-extrabold text-slate-900 mt-2">Memuat sesi aktif...</h2>
+            <p id="currentSessionSubtitle" class="text-xs text-slate-500 mt-0.5">-</p>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-semibold text-slate-400">Radius Lokasi</span>
+            <p id="geofenceInfo" class="text-sm font-bold text-slate-700">-</p>
+          </div>
+        </div>
+
+        <!-- Dropdown Pilihan Sesi Kegiatan Anggota -->
+        <div class="mb-4 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+          <label for="memberSessionSelect"
+            class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+            <span class="flex items-center space-x-1.5">
+              <span>📅</span>
+              <span>Pilih Sesi Kegiatan:</span>
+            </span>
+            <span class="text-[10px] text-slate-500 font-normal">Klik untuk memilih jadwal absensi</span>
+          </label>
+          <select id="memberSessionSelect" onchange="onMemberSessionSelectChange(this.value)"
+            class="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+            <option value="">Memuat daftar sesi kegiatan...</option>
+          </select>
+        </div>
+
+        <!-- Preview Kamera & Ambil Selfie -->
+        <div
+          class="bg-slate-900 rounded-2xl overflow-hidden relative aspect-video flex items-center justify-center shadow-inner mb-4">
+          <video id="cameraVideo" autoplay playsinline muted class="w-full h-full object-cover hidden" style="transform: scaleX(-1);"></video>
+          <canvas id="cameraCanvas" class="hidden"></canvas>
+          <img id="selfiePreview" class="hidden w-full h-full object-cover" />
+
+          <!-- Placeholder Kamera Interaktif -->
+          <div id="cameraPlaceholder"
+            class="cursor-pointer text-center p-4 hover:opacity-90 transition-opacity block w-full select-none">
+            <div
+              class="w-14 h-14 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-2xl mx-auto mb-2 border border-blue-400/30 shadow">
+              📸
+            </div>
+            <p id="cameraPlaceholderTitle" class="text-xs font-bold text-white">
+              Sentuh di Sini untuk Buka Kamera
+            </p>
+            <p id="cameraPlaceholderHint" class="text-[11px] text-slate-300 mt-1">
+              Kamera langsung aktif di HP Android, iPhone, & Laptop
+            </p>
+          </div>
+
+          <!-- Indikator GPS Badge -->
+          <div id="gpsStatusBadge"
+            class="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs text-white flex items-center space-x-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span id="gpsStatusText">Mencari GPS...</span>
+          </div>
+        </div>
+
+        <!-- Tombol Aksi Kamera & Absensi NATIVE (Responsif 100% di semua HP & Desktop) -->
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <button type="button" id="lblTriggerCamera"
+            class="cursor-pointer py-3 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all flex items-center justify-center space-x-1.5 shadow text-center select-none">
+            <span>📷 Ambil Foto Selfie</span>
+          </button>
+          <button type="button" id="btnPickGallery"
+            class="cursor-pointer py-3 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold transition-all flex items-center justify-center space-x-1.5 shadow-sm text-center select-none">
+            <span>📁 Pilih dari Galeri</span>
+          </button>
+        </div>
+
+        <!-- Tombol Khusus saat Live Webcam aktif -->
+        <div id="liveWebcamControlRow" class="hidden grid grid-cols-2 gap-3 mb-4">
+          <button id="btnSnapLiveWebcam" type="button" onclick="snapPhoto()"
+            class="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center justify-center space-x-1.5 shadow">
+            <span>⚡ Jepret Foto</span>
+          </button>
+          <button id="btnCancelLiveWebcam" type="button" onclick="stopCamera()"
+            class="py-2.5 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all flex items-center justify-center space-x-1.5 shadow-sm">
+            <span>✕ Batal</span>
+          </button>
+        </div>
+
+        <!-- Input File Kamera & Galeri NATIVE (Hidden) -->
+        <input type="file" id="fallbackCameraInput" accept="image/*" class="hidden">
+        <input type="file" id="galleryInput" accept="image/*" class="hidden">
+
+        <!-- FORM ISIAN IDENTITAS & CATATAN MEMBER (JANGAN CUMA FOTO DOANG) -->
+        <div class="space-y-3.5 mb-5 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
+          <div class="font-bold text-slate-700 border-b border-slate-200 pb-2 flex items-center justify-between">
+            <span>📋 Konfirmasi Data Kehadiran</span>
+            <span class="text-[10px] text-slate-400 font-normal">Periksa identitas Anda sebelum absen</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Nama Lengkap Anggota</label>
+              <input type="text" id="memberFormFullName"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-none"
+                placeholder="Nama Anda">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Nomor Anggota (NIM/ID)</label>
+              <input type="text" id="memberFormMemberNumber"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-none"
+                placeholder="Nomor Anggota">
+            </div>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Catatan / Keterangan Kehadiran (Opsional)</label>
+            <input type="text" id="memberFormNotes"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-none"
+              placeholder="Misal: Hadir tepat waktu, membawa perlengkapan, dll">
+          </div>
+        </div>
+
+        <!-- Tombol UTAMA: HADIR 1-KLIK -->
+        <button id="btnCheckinMain" onclick="handlePerformAttendance()" disabled
+          class="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 font-black text-white text-base shadow-xl shadow-emerald-600/25 transition-all flex items-center justify-center space-x-2">
+          <span>✓ KLIK TOMBOL HADIR</span>
+        </button>
+      </div>
+
+      <!-- Card Pengajuan Izin / Sakit -->
+      <div class="glass-card rounded-3xl p-6 shadow-xl">
+        <h3 class="text-base font-bold text-slate-900 mb-2">Tidak Dapat Hadir?</h3>
+        <p class="text-xs text-slate-500 mb-4">Ajukan izin atau surat keterangan sakit jika berhalangan menghadiri
+          kegiatan.</p>
+        <button onclick="toggleLeaveModal(true)"
+          class="w-full py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-all">
+          Form Pengajuan Izin / Sakit
+        </button>
+      </div>
+
+      <!-- Riwayat Kehadiran Pribadi -->
+      <div class="glass-card rounded-3xl p-6 shadow-xl">
+        <h3 class="text-base font-bold text-slate-900 mb-4">Riwayat Kehadiran Anda</h3>
+        <div id="myHistoryList" class="space-y-3">
+          <p class="text-xs text-slate-400 text-center py-4">Memuat riwayat...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. VIEW OPERATOR & ADMIN DASHBOARD -->
+    <section id="viewAdminDashboard" class="hidden w-full max-w-5xl mx-auto space-y-6">
+
+      <!-- Tab Menu Navigasi Admin -->
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div class="flex space-x-2">
+          <button id="tabBtnMonitoring" onclick="switchAdminTab('monitoring')"
+            class="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white shadow transition-all">
+            📊 Monitoring Absensi
+          </button>
+          <button id="tabBtnSpreadsheet" onclick="switchAdminTab('spreadsheet')"
+            class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all">
+            📑 Data Spreadsheet
+          </button>
+          <button id="tabBtnMembers" onclick="switchAdminTab('members')"
+            class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all">
+            👥 Manajemen Akses Email
+          </button>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="handleTriggerResync()" title="Sinkronkan Semua Data ke Google Spreadsheet"
+            class="px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 shadow-sm flex items-center space-x-1.5 transition-all">
+            <span>🔄 Sync Sheet</span>
+          </button>
+          <button onclick="handleOpenMainSpreadsheet()" title="Buka Spreadsheet di Google Drive"
+            class="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 shadow-sm flex items-center space-x-1.5 transition-all">
+            <span>📈 Buka Google Sheet</span>
+          </button>
+          <button id="btnCreateSessionTop" onclick="openModalCreateSession()"
+            class="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center space-x-1.5 transition-all">
+            <span>+ Buat Sesi Baru</span>
+          </button>
+          <button id="btnCreateUserTop" onclick="openModalCreateUser()"
+            class="px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center space-x-1.5 transition-all">
+            <span>+ Tambah Anggota</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Banner Info Koneksi Spreadsheet Aktif -->
+      <div
+        class="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+        <div class="flex items-center space-x-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="font-bold text-slate-800">Database Aktif:</span>
+          <span id="activeSpreadsheetName" class="text-slate-600 font-medium">ORGA-ATTEND Database</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <a id="linkDirectSpreadsheet" href="javascript:void(0)" onclick="handleOpenMainSpreadsheet()" target="_blank"
+            class="text-emerald-700 font-bold hover:underline flex items-center space-x-1">
+            <span>Buka Google Sheets Langsung ↗</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- KONTEN TAB 1: MONITORING ABSENSI -->
+      <div id="adminTabMonitoring" class="space-y-6">
+        <!-- Header Statistik -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div class="glass-card p-5 rounded-2xl shadow">
+            <p class="text-xs font-semibold text-slate-500">Total Anggota</p>
+            <p id="statTotalUsers" class="text-2xl font-black text-slate-900 mt-1">0</p>
+          </div>
+          <div class="glass-card p-5 rounded-2xl shadow border-b-2 border-emerald-500">
+            <p class="text-xs font-semibold text-slate-500">Hadir Sesi Ini</p>
+            <p id="statPresentCount" class="text-2xl font-black text-emerald-600 mt-1">0</p>
+          </div>
+          <div class="glass-card p-5 rounded-2xl shadow border-b-2 border-amber-500">
+            <p class="text-xs font-semibold text-slate-500">Terlambat</p>
+            <p id="statLateCount" class="text-2xl font-black text-amber-600 mt-1">0</p>
+          </div>
+          <div class="glass-card p-5 rounded-2xl shadow border-b-2 border-rose-500">
+            <p class="text-xs font-semibold text-slate-500">Belum Absen</p>
+            <p id="statAbsentCount" class="text-2xl font-black text-rose-600 mt-1">0</p>
+          </div>
+        </div>
+
+        <!-- Manajemen Sesi & Realtime Absensi -->
+        <div class="glass-card p-6 rounded-3xl shadow-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">Monitoring Sesi Kegiatan</h2>
+              <p class="text-xs text-slate-500">Buka atau tutup sesi untuk mengizinkan absensi anggota</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <select id="adminSessionSelect" onchange="onAdminSessionSelectChange(this.value)"
+                class="text-xs font-semibold px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-none">
+                <option value="">Pilih Sesi Kegiatan...</option>
+              </select>
+              <button id="btnToggleSession" onclick="handleToggleCurrentSession()"
+                class="px-4 py-2 text-xs font-bold rounded-xl text-white bg-blue-600 hover:bg-blue-700 shadow transition-all">
+                Buka Sesi
+              </button>
+              <button onclick="handleExport('pdf')" title="Export Laporan PDF"
+                class="px-3 py-2 text-xs font-bold rounded-xl text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 shadow-sm transition-all flex items-center space-x-1">
+                <span>📄 PDF</span>
+              </button>
+              <button onclick="handleExport('sheets')" title="Export Laporan Spreadsheet"
+                class="px-3 py-2 text-xs font-bold rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 shadow-sm transition-all flex items-center space-x-1">
+                <span>📊 Sheets</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tabel Kehadiran Realtime -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider">
+                <tr>
+                  <th class="p-3 rounded-l-xl">Nama Anggota</th>
+                  <th class="p-3">Divisi</th>
+                  <th class="p-3">Status</th>
+                  <th class="p-3">Jam Masuk</th>
+                  <th class="p-3">Jarak GPS</th>
+                  <th class="p-3 rounded-r-xl">Selfie</th>
+                </tr>
+              </thead>
+              <tbody id="adminAttendanceTbody" class="divide-y divide-slate-100">
+                <tr>
+                  <td colspan="6" class="p-6 text-center text-slate-400">Pilih sesi untuk melihat data absensi</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- KONTEN TAB 3: DASHBOARD DATA SPREADSHEET LENGKAP -->
+      <div id="adminTabSpreadsheet" class="hidden space-y-6">
+        <div class="glass-card p-6 rounded-3xl shadow-xl">
+          <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">Pusat Data Rekapitulasi Google Spreadsheet</h2>
+              <p class="text-xs text-slate-500">Tersinkronisasi otomatis dengan sheet DATA_KEHADIRAN & DATA_IZIN_SAKIT
+              </p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="handleResyncAll()"
+                class="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 shadow-sm transition-all flex items-center space-x-1">
+                <span>🔄 Sinkron Ulang</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sub-Tab Spreadsheet Data -->
+          <div class="flex space-x-2 mb-4 overflow-x-auto pb-1 text-xs">
+            <button id="subTabBtnKehadiran" onclick="switchSpreadsheetSubTab('kehadiran')"
+              class="px-3 py-1.5 font-bold rounded-lg bg-blue-600 text-white shadow-sm">
+              Data Kehadiran
+            </button>
+            <button id="subTabBtnIzin" onclick="switchSpreadsheetSubTab('izin')"
+              class="px-3 py-1.5 font-bold rounded-lg text-slate-600 hover:bg-slate-100">
+              Data Izin / Sakit
+            </button>
+            <button id="subTabBtnRekap" onclick="switchSpreadsheetSubTab('rekap')"
+              class="px-3 py-1.5 font-bold rounded-lg text-slate-600 hover:bg-slate-100">
+              Rekapitulasi Sesi
+            </button>
+          </div>
+
+          <!-- Input Filter & Pencarian -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 text-xs">
+            <input type="text" id="spreadsheetSearchInput" onkeyup="filterSpreadsheetTable()"
+              placeholder="🔍 Cari nama atau nomor anggota..."
+              class="px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-none">
+            <input type="date" id="spreadsheetDateFilter" onchange="filterSpreadsheetTable()"
+              class="px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-none">
+            <button onclick="resetSpreadsheetFilter()"
+              class="py-2 px-3 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 font-bold">
+              Reset Filter
+            </button>
+          </div>
+
+          <!-- Tabel Tampilan Data Spreadsheet -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs" id="tableSpreadsheetView">
+              <thead id="spreadsheetThead" class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider">
+                <tr>
+                  <th class="p-3">Memuat Kolom...</th>
+                </tr>
+              </thead>
+              <tbody id="spreadsheetTbody" class="divide-y divide-slate-100">
+                <tr>
+                  <td class="p-6 text-center text-slate-400">Memuat data dari Google Spreadsheet...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- KONTEN TAB 2: KELOLA ANGGOTA (CRUD USERS) -->
+      <div id="adminTabMembers" class="hidden space-y-6">
+        <div class="glass-card p-6 rounded-3xl shadow-xl">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">Daftar Anggota Organisasi</h2>
+              <p class="text-xs text-slate-500">Kelola akun, role, dan pembagian divisi anggota</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider">
+                <tr>
+                  <th class="p-3 rounded-l-xl">Nama Lengkap</th>
+                  <th class="p-3">Username / Email</th>
+                  <th class="p-3">Divisi</th>
+                  <th class="p-3">Role</th>
+                  <th class="p-3">Status</th>
+                  <th class="p-3 rounded-r-xl">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="adminMembersTbody" class="divide-y divide-slate-100">
+                <tr>
+                  <td colspan="6" class="p-6 text-center text-slate-400">Memuat anggota...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= MODAL PENGAJUAN IZIN ================= -->
+  <div id="modalLeaveRequest"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="glass-card w-full max-w-md rounded-3xl p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-base font-extrabold text-slate-900">Form Pengajuan Izin / Sakit</h3>
+        <button onclick="toggleLeaveModal(false)"
+          class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>
+      </div>
+      <form onsubmit="handleLeaveSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Jenis Pengajuan</label>
+          <select id="leaveType" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+            <option value="izin">Izin</option>
+            <option value="sakit">Sakit</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Alasan</label>
+          <textarea id="leaveReason" rows="3" required
+            class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
+            placeholder="Tuliskan keterangan detail..."></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Foto Bukti Surat (Opsional)</label>
+          <input type="file" id="leaveFile" accept="image/*" class="w-full text-xs text-slate-500">
+        </div>
+        <div class="flex space-x-2 pt-2">
+          <button type="button" onclick="toggleLeaveModal(false)"
+            class="flex-1 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-600">Batal</button>
+          <button type="submit"
+            class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-xs font-bold text-white shadow">Kirim
+            Pengajuan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL BUAT SESI KEGIATAN BARU ================= -->
+  <div id="modalCreateSession"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="glass-card w-full max-w-lg rounded-3xl p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-base font-extrabold text-slate-900">Buat Kegiatan & Sesi Absensi Baru</h3>
+        <button onclick="closeModalCreateSession()"
+          class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>
+      </div>
+      <div id="createSessionErrorBox"
+        class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold mb-3"></div>
+      <form onsubmit="handleFormCreateSession(event)" class="space-y-3.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Nama Kegiatan</label>
+          <input type="text" id="newEventName" required class="w-full px-3 py-2 rounded-xl border border-slate-300"
+            placeholder="Misal: Rapat Pleno Akbar 2026">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Nama Sesi Absensi</label>
+          <input type="text" id="newSessionName" required class="w-full px-3 py-2 rounded-xl border border-slate-300"
+            placeholder="Misal: Sesi Pagi">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Tanggal Kegiatan</label>
+            <input type="date" id="newSessionDate" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Batas Keterlambatan (Menit)</label>
+            <input type="number" id="newLateAfter" value="15" required
+              class="w-full px-3 py-2 rounded-xl border border-slate-300">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Jam Mulai</label>
+            <input type="time" id="newStartTime" value="08:00" required
+              class="w-full px-3 py-2 rounded-xl border border-slate-300">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Jam Selesai</label>
+            <input type="time" id="newEndTime" value="17:00" required
+              class="w-full px-3 py-2 rounded-xl border border-slate-300">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Radius Geofence (Meter)</label>
+            <input type="number" id="newGeofenceRadius" value="100" required
+              class="w-full px-3 py-2 rounded-xl border border-slate-300">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Titik Lokasi Saat Ini</label>
+            <button type="button" onclick="detectCurrentLocationForForm()"
+              class="w-full py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-700">
+              📍 Ambil GPS Saya
+            </button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <input type="text" id="newLatitude" class="w-full px-3 py-2 rounded-xl border border-slate-300"
+            placeholder="Latitude (opsional)">
+          <input type="text" id="newLongitude" class="w-full px-3 py-2 rounded-xl border border-slate-300"
+            placeholder="Longitude (opsional)">
+        </div>
+        <div class="flex space-x-2 pt-3">
+          <button type="button" onclick="closeModalCreateSession()"
+            class="flex-1 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-600">Batal</button>
+          <button type="submit"
+            class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 font-bold text-white shadow">Simpan &
+            Buka Sesi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL TAMBAH ANGGOTA BARU ================= -->
+  <div id="modalCreateUser"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="glass-card w-full max-w-md rounded-3xl p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-base font-extrabold text-slate-900">Tambah Anggota Organisasi</h3>
+        <button onclick="closeModalCreateUser()"
+          class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>
+      </div>
+      <form onsubmit="handleFormCreateUser(event)" class="space-y-3.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap</label>
+          <input type="text" id="newFullName" required class="w-full px-3 py-2 rounded-xl border border-slate-300"
+            placeholder="Misal: Dimas Pratama">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Username</label>
+            <input type="text" id="newUsername" required class="w-full px-3 py-2 rounded-xl border border-slate-300"
+              placeholder="dimas">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Nomor Anggota (NIM/ID)</label>
+            <input type="text" id="newMemberNumber" class="w-full px-3 py-2 rounded-xl border border-slate-300"
+              placeholder="ORG-001">
+          </div>
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Email Google Anggota</label>
+          <input type="email" id="newEmail" required class="w-full px-3 py-2 rounded-xl border border-slate-300"
+            placeholder="anggota@gmail.com">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Divisi</label>
+            <select id="newDivisionSelect" class="w-full px-3 py-2 rounded-xl border border-slate-300">
+              <option value="">Tanpa Divisi</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Role / Hak Akses</label>
+            <select id="newRoleSelect" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
+              <option value="MEMBER">MEMBER (Anggota Biasa)</option>
+              <option value="OPERATOR">OPERATOR (Pengurus / Panitia)</option>
+              <option value="VIEWER">VIEWER (Pengawas / Hanya Lihat Data)</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Password Login (Opsional, Default: 123456)</label>
+          <input type="text" id="newUserPassword" value="123456"
+            class="w-full px-3 py-2 rounded-xl border border-slate-300">
+        </div>
+        <div class="flex space-x-2 pt-3">
+          <button type="button" onclick="closeModalCreateUser()"
+            class="flex-1 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-600">Batal</button>
+          <button type="submit"
+            class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold text-white shadow">Daftarkan
+            Anggota</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="py-4 text-center text-xs text-slate-400 border-t border-slate-100">
+    ORGA-ATTEND &bull; Sistem Absensi Organisasi &bull; Powered by Google Apps Script & Sheets
+  </footer>
+
+  <!-- Include Core Javascript Logic -->
+  <?!= include('html/scripts'); ?>
+  <?!= include('html/app'); ?>
+</body>
+
+</html>

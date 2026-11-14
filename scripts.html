@@ -1,0 +1,93 @@
+<script>
+  // State Global Aplikasi Client
+  const AppState = {
+    token: localStorage.getItem('orga_token') || null,
+    currentUser: null,
+    activeSessions: [],
+    selectedSessionId: null,
+    cameraStream: null,
+    capturedSelfieBase64: null,
+    cameraFailed: false,
+    geoWatchId: null,
+    currentCoords: null,
+    gpsAccuracy: null
+  };
+
+  // Helper Pemanggi
+  // lan google.script.run berbasis Promise
+  function runServer(functionName, ...args) {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(response => {
+          if (response && response.success !== undefined) {
+            resolve(response);
+          } else {
+            resolve({ success: true, data: response });
+          }
+        })
+        .withFailureHandler(error => {
+          console.error(`[API Error: ${functionName}]`, error);
+          reject(error);
+        })[functionName](...args);
+    });
+  }
+
+  // Notifikasi Toast
+  function showToast(message, type = 'info') {
+    const toast = document.getElementById('toastNotification');
+    const toastMsg = document.getElementById('toastMessage');
+    const toastIcon = document.getElementById('toastIcon');
+
+    toastMsg.innerText = message;
+    
+    toast.className = 'fixed top-5 right-5 z-[99999] flex items-center px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 transform translate-y-0 text-white font-medium ';
+    if (type === 'success') {
+      toast.classList.add('bg-emerald-600');
+      toastIcon.innerHTML = '✓';
+    } else if (type === 'error') {
+      toast.classList.add('bg-rose-600');
+      toastIcon.innerHTML = '✕';
+    } else {
+      toast.classList.add('bg-blue-600');
+      toastIcon.innerHTML = 'ℹ';
+    }
+
+    toast.classList.remove('hidden');
+    setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 5000);
+  }
+
+  // Loading Overlay
+  function showLoading(show = true, message = 'Memproses...') {
+    const overlay = document.getElementById('loadingOverlay');
+    const msgText = document.getElementById('loadingText');
+    if (msgText) msgText.innerText = message;
+    if (show) {
+      overlay.classList.remove('hidden');
+    } else {
+      overlay.classList.add('hidden');
+    }
+  }
+
+  // Navigasi View
+  function showView(viewId) {
+    ['viewLogin', 'viewMemberDashboard', 'viewAdminDashboard'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    });
+    const target = document.getElementById(viewId);
+    if (target) target.classList.remove('hidden');
+  }
+
+  // Format Tanggal
+  function formatDateIndo(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+</script>
